@@ -12,9 +12,16 @@ class Genre(str, Enum):
 
 # Book schema
 class Book(BaseModel):
-    book_id:str
+    book_id:int
     title: str
     author_firstname: str
     author_lastname: str
     genre: Genre
     summary: str    
+
+class CreateBook(BaseModel):    
+    title: str
+    author_firstname: str
+    author_lastname: str
+    genre: Genre
+    summary: str   
