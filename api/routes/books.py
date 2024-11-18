@@ -6,13 +6,34 @@ from typing import Optional
 router = APIRouter()
 
 @router.get("/books/{book_id}", response_model=Book, summary="Retrieve Book Details",)
-def get_book(book_id: str):
+def get_book(book_id: int):
     """
-    This endpoint searchers for a book in the collection by its `book_id`.
-    If the book is found, it returns the book's details. If not, an HTTP 404
-    error is raised with more information.
+    Retrieve details of a book by its `book_id`.
+
+    - Searches for a book in the collection by its `book_id`.
+    - Returns the book's details if found.
+    - Raises an HTTP 404 error if the book is not found.
+    - Raises an HTTP 400 error if `book_id` is invalid (e.g., not positive).
+
+    Parameters:
+    - `book_id` (int): The unique ID of the book.
+
+    Returns:
+    - `Book` object: The book's details.
+
+    Raises:
+    - `HTTPException`: 404 if the book is not found.
+    - `HTTPException`: 400 if the `book_id` is invalid.
 
     """
+
+    #Validate the input
+    if book_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid book ID. Book ID must be a positive integer."
+        )
+    # TODO: Create an edge case for no books in the collection. If database gets flushed.
 
     for book in books:
         if book.book_id == book_id:
