@@ -57,3 +57,7 @@ class ErrorResponse(BaseModel):
 class ValidationErrorResponse(BaseModel):
     detail: list[ErrorResponse]
     error_message: str = "Validation Error"    
+
+class CreateBookResponse(BaseModel):
+    message: str
+    book: Book    

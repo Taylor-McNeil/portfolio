@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Path, status
-from api.models.schemas import Book, BookInput
+from api.models.schemas import Book, BookInput, CreateBookResponse
 from api.helpers.error_responses import generate_422_response
 from api.data.data import books
 from api.helpers.helper_functions import filter_books
@@ -89,7 +89,7 @@ def list_books(
 @router.post(
         "/books", 
         summary="Create a New Book", 
-        response_model=Book, 
+        response_model=CreateBookResponse, 
         responses=generate_422_response("title","author_firstname","author_lastname","genre","summary")
             )
 
