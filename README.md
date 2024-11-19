@@ -40,8 +40,8 @@ Each component is documented and designed with developers in mind, providing too
 This project focuses on developing and documenting the REST API for the Clearwater Library, providing essential functionalities for managing the library’s book collection. It highlights foundational skills in API creation, versioning, and troubleshooting, ensuring that the API remains scalable, user-friendly, and reliable.
 
 - Deliverables:
-    - 🔲 **Library Management REST API**: Supports CRUD operations for managing book records, including adding, updating, deleting, and retrieving book information.
-    - 🔲 **Swagger/OpenAPI Documentation**: Comprehensive documentation for each endpoint, detailing parameters, request/response formats, example responses, and error codes.
+    - 🟡 **Library Management REST API**: Supports CRUD operations for managing book records, including adding, updating, deleting, and retrieving book information.
+    - 🟡 **Swagger/OpenAPI Documentation**: Comprehensive documentation for each endpoint, detailing parameters, request/response formats, example responses, and error codes.
     - 🔲 **Postman Collection**: A downloadable Postman collection to facilitate API testing and interaction for developers and library system integrators.
     - 🔲 **Versioning and Deprecation Notices**: Implements API versioning to ensure backward compatibility, along with deprecation notices for older versions.
     - 🔲 **Error Handling Guide**: A troubleshooting section outlining standard HTTP errors and common issues, offering clear solutions for API users.
