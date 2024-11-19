@@ -1,0 +1,21 @@
+# Root-level .gitignore
+# Handles global rules for the portfolio project
+
+# For Docusaurus and Node.js rules, see website/.gitignore
+
+
+# Ignore Python virtual environment folder
+env/
+
+# Ignore environment files with sensitive info
+.env
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+
+# Ignore node files
+node_modules/
