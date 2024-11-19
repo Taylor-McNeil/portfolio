@@ -1,32 +1,35 @@
-from fastapi import APIRouter, HTTPException, Query, status
-from api.models.schemas import Book, CreateBook
+from fastapi import APIRouter, HTTPException, Query, Path, status
+from api.models.schemas import Book, BookInput
+from api.helpers.error_responses import generate_422_response
 from api.data.data import books
+from api.helpers.helper_functions import filter_books
 from typing import Optional
+
+
 
 router = APIRouter()
 
-@router.get("/books/{book_id}", response_model=Book, summary="Retrieve Book Details",)
-def get_book(book_id: int):
+@router.get(
+        "/books/{book_id}",
+          response_model=Book, 
+          summary="Retrieve Book Details",
+          responses= generate_422_response("book_id")
+          )
+
+def get_book(book_id: int = Path(...,description="A unique identifier for a book.")):
     """
-    Retrieve details of a book by its `book_id`.
+    Retrieve details of a `Book` by its `book_id`.
 
-    - Searches for a book in the collection by its `book_id`.
-    - Returns the book's details if found.
-    - Raises an HTTP 404 error if the book is not found.
-    - Raises an HTTP 400 error if `book_id` is invalid (e.g., not positive).
+    ### Parameters:
+    - **`book_id`** *(int)*: The unique ID of the book. Must be a positive integer.
 
-    Parameters:
-    - `book_id` (int): The unique ID of the book.
+    ### Returns:
+    - **`Book` object**: The details of the requested book.
 
-    Returns:
-    - `Book` object: The book's details.
-
-    Raises:
-    - `HTTPException`: 404 if the book is not found.
-    - `HTTPException`: 400 if the `book_id` is invalid.
-
+    ### Raises:
+    - **HTTPException 404**: No book with the given `book_id` exists.
+    - **HTTPException 400**: `book_id` is invalid. Must be a postive integer.
     """
-
     #Validate the input
     if book_id <= 0:
         raise HTTPException(
@@ -43,49 +46,83 @@ def get_book(book_id: int):
         status_code=status.HTTP_404_NOT_FOUND, 
         detail=f"Book with book id: {book_id} not found")  
 
-@router.get("/books", response_model=list[Book], summary="Retrieve a List of Books")
+@router.get(
+        "/books", 
+        response_model=list[Book], 
+        summary="Retrieve a List of Books",
+        responses= generate_422_response("title","author_firstname","author_lastname","genre")
+          )
+
 def list_books(
-    genre: Optional[str]=Query(None,min_length=3, max_length=25, description="Filter books by genre"), 
-    author_firstname: Optional[str]=Query(None, min_length=3, max_length=25, description="Filter books by author's first name"), 
-    author_lastname:Optional[str]=Query(None, min_length=3, max_length=25, description="Filter books by author's last name")
-    ):
+    title: Optional[str]=Query(None, min_length=3, max_length=50, description="Filter books by title."),
+    author_firstname: Optional[str]=Query(None, min_length=3, max_length=25, description="Filter books by author's first name."), 
+    author_lastname:Optional[str]=Query(None, min_length=3, max_length=25, description="Filter books by author's last name."),
+    genre: Optional[str]=Query(None,min_length=3, max_length=25, description="Filter books by genre.")
+         ):
 
     """
-    This endpoint returns a collection of books. You can filter the results
-    by providing query parameters such as `genre`, `author_firstname`, and/or
-    `author_lastname`. If no filters are provided, all books in the collection
-    are returned.
-    """
+        Retrieve a list of `Books` based on a list of optional criteria.
 
-    filtered_books = books
-    if genre:
-         genre= genre.title()
-         filtered_books = [book for book in filtered_books if book.genre == genre]
-    if author_firstname:
-         author_firstname= author_firstname.title()
-         filtered_books = [book for book in filtered_books if book.author_firstname== author_firstname]    
-    if author_lastname:
-        author_lastname = author_lastname.title()
-        filtered_books = [book for book in filtered_books if book.author_lastname== author_lastname] 
-    return filtered_books
+        ### Parameters:
+         - **title** *(str, optional)*: The name of the book.
+         - **author_firstname** *(str, optional)*: The first name of the book's author.
+         - **author_lastname** *(str, optional)*: The last name of the book's author.
+         - **genre** *(str, optional)*: The genre of the book. 
+            - Possible options:
+                - "Fiction"
+                - "Historical Fiction"
+                - "Fantasy"
+                - "Science Fiction"
+                - "Mystery"
+                - "Romance"
 
-@router.post("/books", summary="Create a New Book")
-def create_book(book: CreateBook):
+        ### Returns:
+        - list[Book]: A list of books matching the provided filters.
+        - An empty list of no books match the criteria.
+
+        ### Raises:
+        - **HTTPException 422**: Occurs if any parameter fails validation (e.g., invalid length or type).
+
+        """
+    return filter_books(books, title,author_firstname,author_lastname,genre)
+
+@router.post(
+        "/books", 
+        summary="Create a New Book", 
+        response_model=Book, 
+        responses=generate_422_response("title","author_firstname","author_lastname","genre","summary")
+            )
+
+def create_book(book: BookInput):
    """
-   Create a new book entry in the system. This endpoint accepts a JSON payload containing details about the book such as the `title`, `summary`, `author_firstname`, `author_last name` and `genre`.
-   A unique `book_id` is automatically assigned to the book upon creation.
+   Create a new book from user-provided data.
+
+   ### Parameters:
+   - **book** *(BookInput)*: A JSON object containing the book's details, provided in the request body. 
+    
+        - Expected Fields:
+            - `title` *(str)*: The title of the book.
+            - `author_firstname` *(str)*: The first name of the book's author.
+            - `author_lastname` *(str)*: The last name of the book's author.
+            - `genre` *(str)*: The genre of the book. Must be one of the predefined options.
+            - `summary` *(str)*: A brief summary of the book.
+    
    
-   ### Request Body
-    - **title**: (string, required) The title of the book.
-    - **author_firstname**: (string, required) The author's name.
-    - **author_lastname**: (string, required) The genre of the book.
-    - **genre**: (string, required) The year the book was published.
-    - **summary**: (string, required) A summary of the book.
-
-    ### Response
-    - **message**: A confirmation message indicating the book was created successfully.
-    - **book**: The created book object, including its assigned `book_id`.
-
+    ### Notes
+    - The `genre` must be one of the predefined options:
+        - Fiction
+        - Mystery
+        - Historical Fiction
+        - Fantasy
+        - Science Fiction
+        - Romance  
+   
+    ### Returns
+    - **dict**: A dictionary containing a success message and the details of the created book. The created book follows the `book` schema.
+     
+    ### Raises
+    -  **HTTPException 422**: If the input data (e.g., genre or other fields) fails validation.
+    
    """
    book_id = len(books) + 1
    
