@@ -47,6 +47,5 @@ This project focuses on developing and documenting the REST API for the Clearwat
     - 🔲 **Error Handling Guide**: A troubleshooting section outlining standard HTTP errors and common issues, offering clear solutions for API users.
 
     ---
-    <br>
     For more details on each project and live demos, visit the full portfolio [here](https://taylor-mcneil.github.io/portfolio/).
                                                                            
