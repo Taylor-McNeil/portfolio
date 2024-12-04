@@ -12,6 +12,7 @@ class Genre(str, Enum):
 
 # Book schema
 class Book(BaseModel):
+    id: str = Field(alias="_id") # Map MongoDB's _id to id
     book_id:int 
     title: str = Field(min_length=3, max_length=50,description="Title of the book.")
     author_firstname: str = Field (min_length=1, max_length=25, description="Author's first name.")

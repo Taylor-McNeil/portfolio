@@ -1,12 +1,24 @@
-def filter_books(books, title=None, author_firstname=None, author_lastname = None, genre= None ):
-    filtered_books = books
+from api.database import books_collection, counters
+
+def filter_books(title=None, author_firstname=None, author_lastname = None, genre= None ):
+    query = {}
     if genre:
-         genre= genre.title()
-         filtered_books = [book for book in filtered_books if book.genre == genre]
+        query["genre"] = {"$regex": genre, "$options": "i"}
     if author_firstname:
-         author_firstname= author_firstname.title()
-         filtered_books = [book for book in filtered_books if book.author_firstname== author_firstname]    
+        query["author_firstname"] = {"$regex": author_firstname, "$options": "i"}
     if author_lastname:
-        author_lastname = author_lastname.title()
-        filtered_books = [book for book in filtered_books if book.author_lastname== author_lastname] 
-    return filtered_books    
+        query["author_lastname"] = {"$regex": author_lastname, "$options": "i"}  
+    if title:
+        query["title"] = {"$regex": title, "$options": "i"}   
+    books = list(books_collection.find(query, {"_id": 0}))  # Exclude MongoDB's internal _id field
+
+    return books   
+
+def get_next_book_id():
+    book_id_count = counters.find_one_and_update(
+        {"key":"book_id"},
+        {"$inc":{"count":1}},
+        return_document=True,
+        upsert=True
+    )
+    return book_id_count["count"]

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Path, status
 from api.models.schemas import Book, BookInput, CreateBookResponse
 from api.helpers.error_responses import generate_422_response
-from api.data.data import books
-from api.helpers.helper_functions import filter_books
+from api.database import books_collection
+#from api.data.data import books
+from api.helpers.helper_functions import filter_books, get_next_book_id
 from typing import Optional
 
 
@@ -12,7 +13,7 @@ router = APIRouter()
 @router.get(
         "/books/{book_id}",
           response_model=Book, 
-          summary="Retrieve Book Details",
+          summary="Retrieve Book Details by Book ID",
           responses= generate_422_response("book_id")
           )
 
@@ -37,14 +38,20 @@ def get_book(book_id: int = Path(...,description="A unique identifier for a book
             detail="Invalid book ID. Book ID must be a positive integer."
         )
     # TODO: Create an edge case for no books in the collection. If database gets flushed.
+    if books_collection.count_documents({}) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="There are no books in the database. Please add a book."
+        )
 
-    for book in books:
-        if book.book_id == book_id:
-            return book
-        
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, 
-        detail=f"Book with book id: {book_id} not found")  
+    book = books_collection.find_one({"book_id": book_id})
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Book with book ID: {book_id} not found."
+        )
+    
+    return book
 
 @router.get(
         "/books", 
@@ -83,8 +90,8 @@ def list_books(
         ### Raises:
         - **HTTPException 422**: Occurs if any parameter fails validation (e.g., invalid length or type).
 
-        """
-    return filter_books(books, title,author_firstname,author_lastname,genre)
+    """
+    return filter_books(title,author_firstname,author_lastname,genre)
 
 @router.post(
         "/books", 
@@ -94,11 +101,12 @@ def list_books(
             )
 
 def create_book(book: BookInput):
-   """
-   Create a new book from user-provided data.
+   
+    """
+    Create a new book from user-provided data.
 
-   ### Parameters:
-   - **book** *(BookInput)*: A JSON object containing the book's details, provided in the request body. 
+    ### Parameters:
+    - **book** *(BookInput)*: A JSON object containing the book's details, provided in the request body. 
     
         - Expected Fields:
             - `title` *(str)*: The title of the book.
@@ -123,20 +131,34 @@ def create_book(book: BookInput):
     ### Raises
     -  **HTTPException 422**: If the input data (e.g., genre or other fields) fails validation.
     
-   """
-   book_id = len(books) + 1
+    """
    
-   new_book = Book(
-       book_id= book_id,
-       title= book.title,
-       author_firstname= book.author_firstname,
-       author_lastname= book.author_lastname,
-       genre= book.genre,
-       summary= book.summary
+    try:
+        book_id = get_next_book_id()
+
+        new_book = {
+            "book_id": book_id,
+            "title": book.title,
+            "author_firstname" : book.author_firstname,
+            "author_lastname" : book.author_lastname,
+            "genre": book.genre,
+            "summary": book.summary
+            }
+        
+        result = books_collection.insert_one(new_book)
+
+        new_book["_id"] = str(result.inserted_id)
+
+        return {"message": "Book created successfully", "book": new_book}
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An error occurred: {str(e)}"
+        )
 
 
-   )
 
 
-   books.append(new_book)
-   return {"message": "Book created successfully", "book": new_book}
+
+
