@@ -5,8 +5,15 @@ from api.database import books_collection
 #from api.data.data import books
 from api.helpers.helper_functions import filter_books, get_next_book_id
 from typing import Optional
+import logging
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -38,20 +45,29 @@ def get_book(book_id: int = Path(...,description="A unique identifier for a book
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid book ID. Book ID must be a positive integer."
         )
-    # TODO: Create an edge case for no books in the collection. If database gets flushed.
+    # Handle edge case: no books in the collection
     if books_collection.count_documents({}) == 0:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="There are no books in the database. Please add a book."
         )
-
-    book = books_collection.find_one({"book_id": book_id},{"_id":0})
-    if not book:
+    # Query the database, excluding the `_id` field
+    book_data = books_collection.find_one({"book_id": book_id},{"_id":0})
+    if not book_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Book with book ID: {book_id} not found."
         )
     
+    try:
+        book = Book(**book_data)
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Data validation error: {e}"
+        )
+    logger.info(f"Type of book: {type(book)}")
+    logger.info(f"Book content: {book}")
 
     return book
 
@@ -147,11 +163,12 @@ def create_book(book: BookInput):
             "summary": book.summary
             }
         
+        # Add the newly created book to the database
         result = books_collection.insert_one(new_book)
+        
 
-        new_book["_id"] = str(result.inserted_id)
 
-        return {"message": "Book created successfully", "book": new_book}
+        return {"message": "Book created successfully", "book": Book(**new_book)}
 
     except Exception as e:
         raise HTTPException(

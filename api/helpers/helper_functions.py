@@ -10,7 +10,8 @@ def filter_books(title=None, author_firstname=None, author_lastname = None, genr
         query["author_lastname"] = {"$regex": author_lastname, "$options": "i"}  
     if title:
         query["title"] = {"$regex": title, "$options": "i"}   
-    books = list(books_collection.find(query, {"_id": 0}))  # Exclude MongoDB's internal _id field
+    books_data = list(books_collection.find(query, {"_id": 0}))  # Exclude MongoDB's internal _id field
+    books = [Book(**books_data) for book in books_data]
 
     return books   
 
