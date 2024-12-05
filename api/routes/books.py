@@ -30,6 +30,7 @@ def get_book(book_id: int = Path(...,description="A unique identifier for a book
     ### Raises:
     - **HTTPException 404**: No book with the given `book_id` exists.
     - **HTTPException 400**: `book_id` is invalid. Must be a postive integer.
+    - **HTTPException 500**: No books in the database.
     """
     #Validate the input
     if book_id <= 0:
@@ -44,13 +45,14 @@ def get_book(book_id: int = Path(...,description="A unique identifier for a book
             detail="There are no books in the database. Please add a book."
         )
 
-    book = books_collection.find_one({"book_id": book_id})
+    book = books_collection.find_one({"book_id": book_id},{"_id":0})
     if not book:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Book with book ID: {book_id} not found."
         )
     
+
     return book
 
 @router.get(
