@@ -1,4 +1,5 @@
 from api.database import books_collection, counters
+from api.models.schemas import Book
 
 def filter_books(title=None, author_firstname=None, author_lastname = None, genre= None ):
     query = {}
